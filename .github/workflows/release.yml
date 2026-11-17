@@ -3,7 +3,8 @@ name: Release
 on:
   push:
     tags:
-      - "v*"
+      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-*"
 
 permissions:
   contents: write
@@ -12,7 +13,7 @@ jobs:
   release:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       # Ad-hoc signing ("-") needs no certificate. Fully unsigned arm64 apps lose their sandbox
       # entitlements, and with them notifications and launch at login.
@@ -39,23 +40,18 @@ jobs:
 
       - name: Create DMG
         run: |
-          brew install create-dmg
           mkdir dmg-source
           cp -R build/UpGaze.app dmg-source/
-          create-dmg \
-            --volname "UpGaze" \
-            --window-pos 200 120 \
-            --window-size 600 400 \
-            --icon-size 100 \
-            --icon "UpGaze.app" 175 190 \
-            --hide-extension "UpGaze.app" \
-            --app-drop-link 425 190 \
-            --skip-jenkins \
-            "UpGaze.dmg" \
-            "dmg-source"
+          ln -s /Applications dmg-source/Applications
+          hdiutil create -volname "UpGaze" -srcfolder dmg-source -format UDZO -ov UpGaze.dmg
+          shasum -a 256 UpGaze.dmg > UpGaze.dmg.sha256
 
+      # A tag with a suffix (v1.1.0-beta) is a pre-release, which keeps it out of /releases/latest.
       - name: Publish release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
-          files: UpGaze.dmg
+          files: |
+            UpGaze.dmg
+            UpGaze.dmg.sha256
           generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}

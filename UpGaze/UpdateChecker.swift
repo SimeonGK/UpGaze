@@ -9,6 +9,7 @@ final class UpdateChecker: ObservableObject {
         case checking
         case upToDate
         case updateAvailable(version: String)
+        case noRelease
         case failed
     }
 
@@ -53,7 +54,15 @@ final class UpdateChecker: ObservableObject {
 
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
-            guard (response as? HTTPURLResponse)?.statusCode == 200 else { return .failed }
+            switch (response as? HTTPURLResponse)?.statusCode {
+            case 200:
+                break
+            // GitHub answers 404 on /releases/latest while the repository has no published release.
+            case 404:
+                return .noRelease
+            default:
+                return .failed
+            }
             let latest = Self.normalized(try JSONDecoder().decode(Release.self, from: data).tagName)
             return Self.isVersion(latest, newerThan: currentVersion)
                 ? .updateAvailable(version: latest)
@@ -69,20 +78,37 @@ final class UpdateChecker: ObservableObject {
         return trimmed.lowercased().hasPrefix("v") ? String(trimmed.dropFirst()) : trimmed
     }
 
-    /// Compares major.minor.patch numerically; a pre-release or build suffix ("-beta", "+5") is ignored.
+    /// Semantic-version precedence: numeric major.minor.patch, then a release outranks its own
+    /// pre-releases ("1.1.0" is newer than "1.1.0-beta"). Build metadata after "+" is ignored.
     nonisolated static func isVersion(_ candidate: String, newerThan current: String) -> Bool {
-        func components(_ version: String) -> [Int] {
-            let core = normalized(version).split(whereSeparator: { $0 == "-" || $0 == "+" }).first ?? ""
-            return core.split(separator: ".").map { Int($0) ?? 0 }
-        }
+        let lhs = parse(candidate)
+        let rhs = parse(current)
 
-        let lhs = components(candidate)
-        let rhs = components(current)
-        for index in 0..<max(lhs.count, rhs.count) {
-            let left = index < lhs.count ? lhs[index] : 0
-            let right = index < rhs.count ? rhs[index] : 0
+        for index in 0..<max(lhs.core.count, rhs.core.count) {
+            let left = index < lhs.core.count ? lhs.core[index] : 0
+            let right = index < rhs.core.count ? rhs.core[index] : 0
             if left != right { return left > right }
         }
-        return false
+
+        if lhs.prerelease.isEmpty || rhs.prerelease.isEmpty {
+            return lhs.prerelease.isEmpty && !rhs.prerelease.isEmpty
+        }
+        for (left, right) in zip(lhs.prerelease, rhs.prerelease) where left != right {
+            switch (Int(left), Int(right)) {
+            case let (l?, r?): return l > r
+            case (nil, _?): return true
+            case (_?, nil): return false
+            case (nil, nil): return left > right
+            }
+        }
+        return lhs.prerelease.count > rhs.prerelease.count
+    }
+
+    private nonisolated static func parse(_ version: String) -> (core: [Int], prerelease: [String]) {
+        let withoutBuild = normalized(version).split(separator: "+", maxSplits: 1).first.map(String.init) ?? ""
+        let parts = withoutBuild.split(separator: "-", maxSplits: 1).map(String.init)
+        let core = (parts.first ?? "").split(separator: ".").map { Int($0) ?? 0 }
+        let prerelease = parts.count > 1 ? parts[1].split(separator: ".").map(String.init) : []
+        return (core, prerelease)
     }
 }

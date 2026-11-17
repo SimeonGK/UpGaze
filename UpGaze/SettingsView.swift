@@ -12,7 +12,7 @@ struct SettingsView: View {
     @Localized private var l10n
     @ObservedObject private var notifications = NotificationManager.shared
     @ObservedObject private var updates = UpdateChecker.shared
-    @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
+    @State private var loginItemStatus = SMAppService.mainApp.status
     @State private var launchAtLoginFailure: String?
 
     var body: some View {
@@ -41,9 +41,18 @@ struct SettingsView: View {
             section(l10n.generalSection) {
                 Toggle(l10n.soundEffects, isOn: $soundEnabled)
                 Toggle(l10n.launchAtLogin, isOn: Binding(
-                    get: { launchAtLogin },
+                    get: { loginItemStatus == .enabled || loginItemStatus == .requiresApproval },
                     set: { setLaunchAtLogin($0) }
                 ))
+                if loginItemStatus == .requiresApproval {
+                    Text(l10n.loginItemNeedsApproval)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Button(l10n.openLoginItems) {
+                        SMAppService.openSystemSettingsLoginItems()
+                    }
+                }
                 if let launchAtLoginFailure {
                     Text(l10n.launchAtLoginFailed(launchAtLoginFailure))
                         .font(.caption)
@@ -94,7 +103,7 @@ struct SettingsView: View {
         .toggleStyle(.switch)
         .controlSize(.small)
         .onAppear {
-            launchAtLogin = SMAppService.mainApp.status == .enabled
+            loginItemStatus = SMAppService.mainApp.status
             notifications.refreshAuthorizationStatus()
         }
     }
@@ -119,6 +128,10 @@ struct SettingsView: View {
                 }
                 .buttonStyle(.borderedProminent)
             }
+        case .noRelease:
+            Label(l10n.noReleaseYet, systemImage: "info.circle")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         case .failed:
             Label(l10n.updateCheckFailed, systemImage: "exclamationmark.triangle")
                 .font(.caption)
@@ -162,7 +175,7 @@ struct SettingsView: View {
         } catch {
             launchAtLoginFailure = error.localizedDescription
         }
-        launchAtLogin = SMAppService.mainApp.status == .enabled
+        loginItemStatus = SMAppService.mainApp.status
     }
 
     private func openNotificationSettings() {

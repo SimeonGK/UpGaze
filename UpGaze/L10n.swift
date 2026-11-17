@@ -165,6 +165,13 @@ struct L10n: Equatable, Sendable {
     }
     var soundEffects: String { tr("Geluidseffecten", "Sound effects") }
     var launchAtLogin: String { tr("Start bij inloggen", "Launch at login") }
+    var loginItemNeedsApproval: String {
+        tr(
+            "macOS blokkeert het starten bij inloggen. Sta UpGaze toe bij Inlogonderdelen.",
+            "macOS is blocking launch at login. Allow UpGaze under Login Items."
+        )
+    }
+    var openLoginItems: String { tr("Open Inlogonderdelen", "Open Login Items") }
     var setUpWorkstationEllipsis: String { tr("Werkplek instellen…", "Set up workstation…") }
     var notificationsOff: String { tr("Meldingen staan uit", "Notifications are off") }
     var notificationsOffDescription: String {
@@ -186,6 +193,7 @@ struct L10n: Equatable, Sendable {
     var checkingForUpdates: String { tr("Controleren…", "Checking…") }
     var upToDate: String { tr("Je hebt de nieuwste versie.", "You're up to date.") }
     var openDownload: String { tr("Open download", "Open Download") }
+    var noReleaseYet: String { tr("Er is nog geen release gepubliceerd.", "No release has been published yet.") }
     var updateCheckFailed: String {
         tr(
             "Controleren op updates is mislukt. Probeer het later opnieuw.",

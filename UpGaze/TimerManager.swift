@@ -67,6 +67,9 @@ final class TimerManager: ObservableObject {
     private enum SuspendReason {
         case locked
         case asleep
+        case displayAsleep
+        case screenSaver
+        case sessionInactive
     }
 
     private let defaults = UserDefaults.standard
@@ -100,16 +103,10 @@ final class TimerManager: ObservableObject {
             }
         }
 
-        // App Nap would otherwise defer the timer by tens of seconds while the popover is closed.
-        activity = ProcessInfo.processInfo.beginActivity(
-            options: .userInitiatedAllowingIdleSystemSleep,
-            reason: "Posture and eye timers"
-        )
-
         observeSystemEvents()
 
         lastTick = ProcessInfo.processInfo.systemUptime
-        let timer = Timer(timeInterval: 0.5, repeats: true) { [weak self] _ in
+        let timer = Timer(timeInterval: 1, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.tick() }
         }
         timer.tolerance = 0.1
@@ -140,6 +137,12 @@ final class TimerManager: ObservableObject {
         observe(distributed, Notification.Name("com.apple.screenIsUnlocked")) { $0.setSuspended(.locked, false) }
         observe(workspace, NSWorkspace.willSleepNotification) { $0.setSuspended(.asleep, true) }
         observe(workspace, NSWorkspace.didWakeNotification) { $0.setSuspended(.asleep, false) }
+        observe(workspace, NSWorkspace.screensDidSleepNotification) { $0.setSuspended(.displayAsleep, true) }
+        observe(workspace, NSWorkspace.screensDidWakeNotification) { $0.setSuspended(.displayAsleep, false) }
+        observe(workspace, NSWorkspace.sessionDidResignActiveNotification) { $0.setSuspended(.sessionInactive, true) }
+        observe(workspace, NSWorkspace.sessionDidBecomeActiveNotification) { $0.setSuspended(.sessionInactive, false) }
+        observe(distributed, Notification.Name("com.apple.screensaver.didstart")) { $0.setSuspended(.screenSaver, true) }
+        observe(distributed, Notification.Name("com.apple.screensaver.didstop")) { $0.setSuspended(.screenSaver, false) }
         observe(.default, UserDefaults.didChangeNotification) { $0.applySettings() }
     }
 
@@ -211,6 +214,7 @@ final class TimerManager: ObservableObject {
             } else if eyeElapsed >= Self.eyeIntervalSeconds {
                 eyeElapsed = 0
                 isEyeBreak = true
+                setPreciseTiming(true)
                 notifications.sendEyeBreak()
                 play("Tink")
             }
@@ -222,8 +226,22 @@ final class TimerManager: ObservableObject {
     private func finishEyeBreak(playSound: Bool) {
         eyeElapsed = 0
         isEyeBreak = false
+        setPreciseTiming(false)
         notifications.clearEyeBreak()
         if playSound { play("Glass") }
+    }
+
+    /// App Nap may defer the timer by several seconds; that only matters during the 20-second break.
+    private func setPreciseTiming(_ enabled: Bool) {
+        if enabled, activity == nil {
+            activity = ProcessInfo.processInfo.beginActivity(
+                options: .userInitiatedAllowingIdleSystemSleep,
+                reason: "Eye break countdown"
+            )
+        } else if !enabled, let current = activity {
+            ProcessInfo.processInfo.endActivity(current)
+            activity = nil
+        }
     }
 
     private func applySettings() {
@@ -233,6 +251,7 @@ final class TimerManager: ObservableObject {
             eyeElapsed = 0
             if isEyeBreak {
                 isEyeBreak = false
+                setPreciseTiming(false)
                 notifications.clearEyeBreak()
             }
         }
@@ -257,9 +276,9 @@ final class TimerManager: ObservableObject {
     /// Assigns only on change: every @Published write re-renders the menu bar label.
     private func publish() {
         let total = Int(postureTotal.rounded())
-        let left = max(Int((postureTotal - postureElapsed).rounded(.up)), 0)
+        let left = max(Int((postureTotal - postureElapsed).rounded()), 0)
         let eyeTotal = isEyeBreak ? Self.eyeBreakSeconds : Self.eyeIntervalSeconds
-        let eyeLeft = max(Int((eyeTotal - eyeElapsed).rounded(.up)), 0)
+        let eyeLeft = max(Int((eyeTotal - eyeElapsed).rounded()), 0)
 
         if postureTotalSeconds != total { postureTotalSeconds = total }
         if postureSecondsLeft != left { postureSecondsLeft = left }

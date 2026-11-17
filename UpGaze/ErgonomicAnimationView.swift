@@ -153,7 +153,9 @@ struct ErgonomicSceneState: VectorArithmetic {
         state.height = h
         state.sit = isStanding ? 0 : 1
         state.recline = step == .chair && rewound ? 0 : 15
-        state.deskHeight = isStanding ? 0.60 * h : 0.41 * h + (deskAdjusted ? 0 : 7)
+        state.deskHeight = isStanding
+            ? ErgonomicMeasurements.standingDeskRatio * h
+            : ErgonomicMeasurements.sittingDeskRatio * h + (deskAdjusted ? 0 : 7)
         state.monitorTop = FigurePose(state: state).eye.y - (monitorAligned ? 0 : 10)
         state.chairSlide = isStanding ? 28 : 0
         state.chairHighlight = step == .chair ? 1 : 0
@@ -353,7 +355,7 @@ private struct ScenePainter {
 
     private var h: Double { state.height }
     private var chairX: Double { 0.03 * h - state.chairSlide }
-    private var seatTop: Double { 0.265 * h }
+    private var seatTop: Double { ErgonomicMeasurements.seatRatio * h }
     private var deskFront: Double { 0.07 * h }
     private var monitorX: Double { deskFront + 50 }
 

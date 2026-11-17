@@ -53,8 +53,10 @@ account is needed. Launch at login works reliably only when the app is in `/Appl
 
 ## Releasing
 
-Pushing a tag that starts with `v` builds a universal app, packages it as `UpGaze.dmg` and
-publishes a GitHub release with it. The app's version is taken from the tag.
+Pushing a version tag such as `v1.0.0` builds a universal app, packages it as `UpGaze.dmg` and
+publishes a GitHub release with it and its SHA-256 checksum. The app's version is taken from the
+tag. A tag with a suffix, such as `v1.1.0-beta`, is published as a pre-release and is not offered
+by the download link or the in-app update check.
 
 ```bash
 git tag v1.0.0

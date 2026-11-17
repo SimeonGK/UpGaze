@@ -14,11 +14,15 @@ enum ErgonomicStep: Int, CaseIterable, Identifiable {
 struct ErgonomicMeasurements {
     static let heightRange: ClosedRange<Double> = 145...215
 
+    static let seatRatio = 0.265
+    static let sittingDeskRatio = 0.41
+    static let standingDeskRatio = 0.60
+
     let userHeightCm: Double
 
-    var seatHeight: Int { cm(0.265) }
-    var sittingDeskHeight: Int { cm(0.41) }
-    var standingDeskHeight: Int { cm(0.60) }
+    var seatHeight: Int { cm(Self.seatRatio) }
+    var sittingDeskHeight: Int { cm(Self.sittingDeskRatio) }
+    var standingDeskHeight: Int { cm(Self.standingDeskRatio) }
     var sittingMonitorTop: Int { cm(0.70) }
     var standingMonitorTop: Int { cm(0.93) }
 
@@ -37,7 +41,9 @@ final class SetupWindowController: NSObject, NSWindowDelegate {
         let window = self.window ?? makeWindow()
         self.window = window
 
-        if !window.isVisible {
+        if window.isMiniaturized {
+            window.deminiaturize(nil)
+        } else if !window.isVisible {
             let view = ErgonomicSetupView { [weak window] in window?.close() }
             window.contentViewController = NSHostingController(rootView: view)
             window.center()
