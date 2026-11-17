@@ -1,44 +1,58 @@
-# UpGaze
+<p align="center">
+  <img src="docs/icon.png" width="128" alt="UpGaze icon">
+</p>
 
-A small, free macOS menu bar app that helps prevent lower back pain and eye strain. It alternates
-sitting and standing on a timer and reminds you of the 20-20-20 rule: every 20 minutes, look at
-something 6 metres (20 feet) away for 20 seconds.
+<h1 align="center">UpGaze</h1>
 
-## [Download UpGaze.dmg](https://github.com/SimeonGK/UpGaze/releases/latest/download/UpGaze.dmg)
+<p align="center">
+  A macOS menu bar app that reminds you to switch between sitting and standing, and to rest your eyes.
+</p>
 
-Requires macOS 14 or later. Runs on Apple silicon and Intel Macs.
+<p align="center">
+  <a href="https://github.com/SimeonGK/UpGaze/releases/latest"><img src="https://img.shields.io/github/v/release/SimeonGK/UpGaze" alt="Latest release"></a>
+  <img src="https://img.shields.io/badge/macOS-14%2B-blue" alt="macOS 14 or later">
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/SimeonGK/UpGaze" alt="MIT license"></a>
+</p>
 
-## Opening UpGaze for the first time
+<p align="center">
+  <a href="https://github.com/SimeonGK/UpGaze/releases/latest/download/UpGaze.dmg"><b>Download UpGaze.dmg</b></a>
+</p>
 
-UpGaze is not signed with a paid Apple developer certificate, so macOS asks you to confirm once
-that you trust it.
-
-1. Open `UpGaze.dmg`, drag **UpGaze** to **Applications**, and try to open it once. macOS shows a
-   warning and does not open the app. Click **Done**.
-2. Open **System Settings → Privacy & Security** and scroll down to the **Security** section.
-3. Next to the message about UpGaze, click **Open Anyway** and confirm.
-
-After that UpGaze opens normally. It lives in the menu bar only; there is no Dock icon.
+<p align="center">
+  <img src="docs/workstation-setup.png" width="460" alt="Workstation setup illustration showing chair height and sitting angles">
+</p>
 
 ## Features
 
 - **Sit / stand timer.** 40 minutes sitting and 15 minutes standing by default, both adjustable.
-  The menu bar shows the current posture and the minutes left, for example `38m`. Switch now,
-  pause, or snooze 5 minutes from the popover or straight from the notification.
-- **20-20-20 eye rule.** Every 20 minutes a gentle reminder, then a 20-second countdown in the
-  menu bar and the popover, with a sound at the start and the end.
-- **Workstation setup.** Enter your height and get personal target heights for your chair, desk
-  (sitting and standing) and monitor, explained in four steps with an animated illustration.
-- **Dutch and English.** Follows the macOS system language; can be switched in Settings without
-  a restart.
-- **Pauses when you are away.** Both timers pause when the screen locks or the Mac sleeps, and
-  resume on unlock.
-- **Launch at login**, optional.
-- **Update check.** Settings has a button that compares your version with the latest release.
+  The menu bar shows your current posture and the minutes left.
+- **20-20-20 eye rule.** Every 20 minutes, a 20-second countdown to look at something 6 metres
+  (20 feet) away.
+- **Workstation setup.** Enter your height and get target heights for your chair, desk and
+  monitor, explained in four animated steps.
+- **Pauses when you are away.** The timers stop when the screen locks or the Mac sleeps.
+- **Dutch and English.** Follows the macOS language, or pick one in Settings.
 
-## Building from source
+## Install
 
-You need Xcode 16 or later.
+1. [Download UpGaze.dmg](https://github.com/SimeonGK/UpGaze/releases/latest/download/UpGaze.dmg),
+   open it and drag **UpGaze** to **Applications**.
+2. Open UpGaze once. macOS shows a warning, because the app is not signed with a paid Apple
+   developer certificate. Click **Done**.
+3. Go to **System Settings → Privacy & Security**, scroll to **Security** and click
+   **Open Anyway**.
+
+You only need to do this the first time. Requires macOS 14 or later, on Apple silicon or Intel.
+
+## Usage
+
+UpGaze lives in the menu bar; there is no Dock icon. Click it to see the timer, switch posture,
+pause, or snooze for 5 minutes. The **Settings** tab has the durations, sounds, launch at login,
+language and an update check. **Set up workstation** opens the height guide.
+
+## Build from source
+
+You need Xcode 16 or later. No Apple developer account is required.
 
 ```bash
 git clone https://github.com/SimeonGK/UpGaze.git
@@ -48,44 +62,17 @@ git clone https://github.com/SimeonGK/UpGaze.git
 open UpGaze/UpGaze.xcodeproj
 ```
 
-Press **Run** (`Cmd + R`). The project signs ad hoc ("Sign to Run Locally"), so no Apple developer
-account is needed. Launch at login works reliably only when the app is in `/Applications`.
+Then press **Run**.
 
-## Releasing
+## Contributing
 
-Pushing a version tag such as `v1.0.0` builds a universal app, packages it as `UpGaze.dmg` and
-publishes a GitHub release with it and its SHA-256 checksum. The app's version is taken from the
-tag. A tag with a suffix, such as `v1.1.0-beta`, is published as a pre-release and is not offered
-by the download link or the in-app update check.
-
-```bash
-git tag v1.0.0
-```
-
-```bash
-git push origin v1.0.0
-```
-
-## Project layout
-
-| File | Purpose |
-| --- | --- |
-| `UpGaze/PostureEyeApp.swift` | App entry point, `MenuBarExtra` scene and menu bar label |
-| `UpGaze/TimerManager.swift` | Posture and eye timers, lock and sleep handling, sounds |
-| `UpGaze/NotificationManager.swift` | Notification permission, delivery and action handling |
-| `UpGaze/MenuBarPopoverView.swift` | Popover with the timer view |
-| `UpGaze/SettingsView.swift` | Settings tab |
-| `UpGaze/ErgonomicSetupView.swift` | Workstation setup wizard, its window and the height calculations |
-| `UpGaze/ErgonomicAnimationView.swift` | Illustration shown next to the wizard steps |
-| `UpGaze/L10n.swift` | All user-facing text in Dutch and English, and the language setting |
-| `UpGaze/UpdateChecker.swift` | Compares the app version with the latest GitHub release |
-| `.github/workflows/release.yml` | Builds and publishes `UpGaze.dmg` for every `v*` tag |
+Issues and pull requests are welcome.
 
 ## Privacy
 
-UpGaze collects nothing. The only network request it makes is to the GitHub API, and only when
-you click **Check for Updates**.
+UpGaze collects nothing. Its only network request goes to the GitHub API, and only when you
+click **Check for Updates**.
 
 ## License
 
-MIT, see [LICENSE](LICENSE).
+[MIT](LICENSE)
