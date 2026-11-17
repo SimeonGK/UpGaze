@@ -1,0 +1,61 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Ad-hoc signing ("-") needs no certificate. Fully unsigned arm64 apps lose their sandbox
+      # entitlements, and with them notifications and launch at login.
+      - name: Build universal app
+        run: |
+          xcodebuild \
+            -project UpGaze.xcodeproj \
+            -scheme UpGaze \
+            -configuration Release \
+            ARCHS="arm64 x86_64" \
+            ONLY_ACTIVE_ARCH=NO \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM="" \
+            MARKETING_VERSION="${GITHUB_REF_NAME#v}" \
+            CURRENT_PROJECT_VERSION="${GITHUB_RUN_NUMBER}" \
+            CONFIGURATION_BUILD_DIR="$PWD/build" \
+            build
+
+      - name: Verify app
+        run: |
+          lipo -archs build/UpGaze.app/Contents/MacOS/UpGaze
+          codesign --verify --deep --strict build/UpGaze.app
+
+      - name: Create DMG
+        run: |
+          brew install create-dmg
+          mkdir dmg-source
+          cp -R build/UpGaze.app dmg-source/
+          create-dmg \
+            --volname "UpGaze" \
+            --window-pos 200 120 \
+            --window-size 600 400 \
+            --icon-size 100 \
+            --icon "UpGaze.app" 175 190 \
+            --hide-extension "UpGaze.app" \
+            --app-drop-link 425 190 \
+            --skip-jenkins \
+            "UpGaze.dmg" \
+            "dmg-source"
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: UpGaze.dmg
+          generate_release_notes: true
